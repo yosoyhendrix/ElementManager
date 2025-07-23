@@ -1,0 +1,34 @@
+  \e[1;31m                 Versión: \e[32m1.0\e[97m
+Renovación y Creación:
+- Renovación del código fuente
+- Creación de cuentas SSH: Normal/Token/HWID
+
+Optimización:
+- Optimización en el menú de control SSH/SSL/V2RAY
+- Optimización en los monitores SSH/OPENVPN
+- Optimización en las mejoras de autoinicio
+- Mejora en el monitor de protocolos
+
+Mejoras y Añadidos:
+- Mejoras en los indicadores de estado
+- Mejoras en la instalación de protocolos
+- Mejora en el contador de usuarios en línea
+- Número de cuentas registradas SSH/SSR/V2RAY
+- Soporte multipuerto para BadVPN
+- Renovación del limitador y desbloqueo 
+(Bajo consumo de recursos en comparación con otros)
+- Añadido soporte para SSH Normal, HWID y Tokens para aplicaciones personalizadas
+- Renovación del BOT de notificaciones 
+(bloqueo SSH, SSH expirada, reinicio del VPS, protocolos caídos, aviso de inicio de sesión ROOT)
+- Proxy WebSocket autónomo y configuración auto-guardada
+- Respaldo de SSH VPS a VPS desde el sistema
+- Control remoto de la key
+- Añadido soporte para SSLH
+
+Correcciones:
+- Corrección importante en la administración de la base de usuarios
+- Corrección en el monitor Op8
+- Corrección de enlaces rotos
+- Reforma del instalador
+- Corrección en la instalación de Dropbear
+
