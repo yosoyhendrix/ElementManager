@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Variables
+LAST_CHECK_FILE="/etc/ElementManager/temp/last_check"
+SERVER_URL="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/IP-Block"
+BAN_STATUS_FILE="/etc/ElementManager/temp/ban_status"
+
+# Función para verificar si la IP está bloqueada
+check_ip_ban() {
+    local ip
+    ip=$(wget -qO- ifconfig.me)
+    
+    if curl -sSL "$SERVER_URL" | grep -qF "$ip"; then
+        handle_banned_ip
+    else
+        echo "not_banned" > "$BAN_STATUS_FILE"
+    fi
+}
+
+# Función para manejar la IP bloqueada
+handle_banned_ip() {
+    echo "banned" > "$BAN_STATUS_FILE"
+    echo -e "\a\a\a\a" # Alerta sonora
+    echo -e "\n\n\033[1;31m————————————————————————————————————————————————————\n ¡KEY POSIBLEMENTE NO REGISTRADA! CONTATE A \e[1;93m@Near365\033[1;31m \n————————————————————————————————————————————————————\n"
+    echo -e " \e[1;32m     --- CONSULTANDO BASE DE IP DE NUEVO ---  " | pv -qL 10
+    echo -e "\n \e[1;93m           --- DIGITE DE NUEVO \e[1;97mmenu \e[1;93m ---  " | pv -qL 10
+    echo -e "\n\033[1;31m————————————————————————————————————————————————————\n\n"
+    kill_menu_process
+    exit 1
+}
+
+# Función para matar el proceso del menú
+kill_menu_process() {
+    local pid
+    pid=$(< /etc/ElementManager/temp/menuid)
+    kill "$pid"
+}
+
+# Función principal
+main() {
+    # Verificar si ha pasado más de una hora desde la última comprobación
+    if [[ -f "$LAST_CHECK_FILE" && $(find "$LAST_CHECK_FILE" -mmin +60 -print) ]]; then
+        check_ip_ban
+        date "+%Y-%m-%d %H:%M:%S" > "$LAST_CHECK_FILE"
+    else
+        # Si no ha pasado una hora, comprobar el estado de bloqueo del archivo
+        local status
+        status=$(< "$BAN_STATUS_FILE")
+        if [[ "$status" == "banned" ]]; then
+            kill_menu_process
+            exit 1
+        fi
+    fi
+}
+
+# Ejecutar la función principal
+main
+
