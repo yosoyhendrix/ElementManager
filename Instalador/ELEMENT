@@ -536,9 +536,9 @@ check_key() {
   #if [[ $RESPONSE == *"Licencia válida"* ]]; then
       #success_msg "La licencia es válida. Continuando con la instalación..."
       instalador_final
-  else
-      error_fun
-  fi
+  #else
+      #error_fun
+  #fi
 
 }
 check_key
