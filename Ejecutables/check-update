@@ -1,1 +1,17 @@
-echo -e "\n\n\033[1;31m————————————————————————————————————————————————————\n ¡KEY POSIBLEMENTE NO REGISTRADA! CONTATE A \e[1;93m@Near365\033[1;31m \n————————————————————————————————————————————————————\n"
+#!/bin/bash
+# ... código previo ...
+
+# Función para manejar la IP bloqueada
+handle_banned_ip() {
+    echo "banned" > "$BAN_STATUS_FILE"
+    # Deshabilitado el bloqueo y el mensaje
+    # echo -e "\a\a\a\a"
+    # echo -e "\n\n\033[1;31m————————————————————————————————————————————————————\n ¡KEY POSIBLEMENTE NO REGISTRADA! CONTATE A \e[1;93m@Near365\033[1;31m \n————————————————————————————————————————————————————\n"
+    # echo -e " \e[1;32m     --- CONSULTANDO BASE DE IP DE NUEVO ---  " | pv -qL 10
+    # echo -e "\n \e[1;93m           --- DIGITE DE NUEVO \e[1;97mmenu \e[1;93m ---  " | pv -qL 10
+    # echo -e "\n\033[1;31m————————————————————————————————————————————————————\n\n"
+    # kill_menu_process
+    # exit 1
+}
+
+# ... resto del script ...
