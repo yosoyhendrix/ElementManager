@@ -13,8 +13,8 @@ WHITE='\033[1;37m'
 RESET='\033[0m'
 
 # URLs del binario según arquitectura
-URL_ARM64="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/clarox_ARM64"
-URL_ARM32="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/clarox_ARM32"
+URL_ARM64="https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/clarox_ARM64"
+URL_ARM32="https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/clarox_ARM32"
 
 # Directorio de instalación
 DEST="$PREFIX/bin/clarox"
