@@ -1,0 +1,9 @@
+#linux mint 6 
+
+deb http://packages.linuxmint.com faye main upstream import backport 
+
+deb http://mirror.cogentco.com/debian bookworm main contrib non-free non-free-firmware
+deb http://mirror.cogentco.com/debian bookworm-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/ bookworm-security main contrib non-free non-free-firmware
+
+deb http://mirror.cogentco.com/debian bookworm-backports main contrib non-free non-free-firmware
