@@ -346,7 +346,7 @@ config_bashrc() {
     if ! grep -q "print_element_banner" <<< "$(declare -F)"; then
         cat << 'EOF' >> "$userfolder/.bashrc"
 print_element_banner() {
-    wget -qO /etc/ElementManager/temp/version_actual https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version &>/dev/null
+    wget -qO /etc/ElementManager/temp/version_actual https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Version &>/dev/null
     local version=$(cat /etc/ElementManager/temp/version_actual 2>/dev/null)
     local mess1="$(less -f /etc/ElementManager/message.txt)"
     local WHITE="\033[1;37m"
@@ -387,19 +387,19 @@ instalador_final() {
   tput cuu1 && tput dl1
   echo -e "     \033[1;4;32mLA KEY ES VALIDA FINALIZANDO INSTALACION \033[0;39m"
   ##-->> ACOPLANDO INSTALL EN /BIN
-  wget /root/ELEMENT https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Instalador/ELEMENT -O /usr/bin/ELEMENT &>/dev/null
+  wget /root/ELEMENT https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Instalador/ELEMENT -O /usr/bin/ELEMENT &>/dev/null
   chmod +x /usr/bin/ELEMENT
   ##-->> LIMPIAR BASHRC
   /bin/cp /etc/skel/.bashrc ~/
   ##-->> DESCARGAR FICHEROS
   cd /etc
-  wget https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/ElementManager.tar.gz >/dev/null 2>&1
+  wget https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/ElementManager.tar.gz >/dev/null 2>&1
   tar -xf ElementManager.tar.gz >/dev/null 2>&1
   chmod +x ElementManager.tar.gz >/dev/null 2>&1
   rm -rf ElementManager.tar.gz
   cd
   ##-->> ADPTAR SLOGAN
-  wget -O /etc/ElementManager/message.txt https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/ElementManager/message.txt &>/dev/null
+  wget -O /etc/ElementManager/message.txt https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/ElementManager/message.txt &>/dev/null
   SCPdir="/etc/ElementManager"
   SCPinstal="$HOME/install"
   Filbot="${SCPdir}/botmanager"
@@ -407,21 +407,21 @@ instalador_final() {
   Filotros="${SCPdir}/temp"
   IP=$(cat /root/.ssh/authorized_key.reg)
   ### INSTALAR VERSION DE SCRIPT
-  v1=$(curl -sSL "https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version")
+  v1=$(curl -sSL "https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Version")
   echo "$v1" >/etc/ElementManager/temp/version_instalacion
   FIns=$(printf '%(%D-%H:%M:%S)T')
   echo "$FIns" >/etc/ElementManager/F-Instalacion
   last_check_file="/etc/ElementManager/temp/last_check"
   date "+%Y-%m-%d %H:%M:%S" >"$last_check_file"
-  wget -O /bin/rebootnb https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/rebootnb.sh &>/dev/null
+  wget -O /bin/rebootnb https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Ejecutables/rebootnb.sh &>/dev/null
   chmod +x /bin/rebootnb
-  wget -O /bin/autoinicios https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/autoinicios &>/dev/null
+  wget -O /bin/autoinicios https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Ejecutables/autoinicios &>/dev/null
   chmod +rwx /bin/autoinicios
-  wget -O /etc/systemd/system/inicioelement.service https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/inicioelement.service &>/dev/null
+  wget -O /etc/systemd/system/inicioelement.service https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Ejecutables/inicioelement.service &>/dev/null
   sudo systemctl enable -q inicioelement.service
-  wget -O /bin/check-update https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/check-update &>/dev/null
+  wget -O /bin/check-update https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Ejecutables/check-update &>/dev/null
   chmod +rwx /bin/check-update
-  wget -O /etc/ElementManager/temp/version_actual https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version &>/dev/null
+  wget -O /etc/ElementManager/temp/version_actual https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Version &>/dev/null
    echo '#!/bin/sh -e' >/etc/rc.local
     sudo chmod +x /etc/rc.local
     echo "sudo rebootnb reboot" >>/etc/rc.local
@@ -433,7 +433,7 @@ instalador_final() {
   echo "${SCPdir}/menu.sh" >/usr/bin/MENU && chmod +x /usr/bin/MENU
   echo "$Key" >${SCPdir}/key.txt
   #-BASH SOPORTE ONLINE
-  wget https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Fixs%20Remotos/SPR.sh -O /usr/bin/SPR >/dev/null 2>&1
+  wget https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Fixs%20Remotos/SPR.sh -O /usr/bin/SPR >/dev/null 2>&1
   chmod +x /usr/bin/SPR
   SPR >/dev/null 2>&1
   timeespera="1"
