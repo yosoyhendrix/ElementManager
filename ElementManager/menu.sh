@@ -3,7 +3,7 @@
 echo "$$" >/etc/ElementManager/temp/menuid
 clear && clear
 echo -e "\a\a\a"
-check-update
+#check-update
 if [ $(whoami) != 'root' ]; then #-- VERIFICAR ROOT
   echo -e "\033[1;31m -- NECESITAS SER USER ROOT PARA EJECUTAR EL SCRIPT --\n\n\033[97m                DIGITE: \033[1;32m sudo su; menu\n"
   sleep 5s
