@@ -2,7 +2,7 @@
 
 # Variables
 LAST_CHECK_FILE="/etc/ElementManager/temp/last_check"
-SERVER_URL="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/IP-Block"
+SERVER_URL="https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/IP-Block"
 BAN_STATUS_FILE="/etc/ElementManager/temp/ban_status"
 
 # Función para verificar si la IP está bloqueada
