@@ -21,7 +21,7 @@ print_formatted() {
 colores="$(pwd)/colores"
 rm -rf "${colores}"
 
-if ! wget -O "${colores}" "https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/colores" &>/dev/null; then
+if ! wget -O "${colores}" "https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Ejecutables/colores" &>/dev/null; then
     echo "Error: No se pudo descargar el archivo colores."
     exit 1
 fi
@@ -79,7 +79,7 @@ detect_os() {
 # Función para agregar un repositorio según la versión del sistema
 add_repo() {
     local version="$1"
-    local link="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Source-List/${version}.list"
+    local link="https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Source-List/${version}.list"
 
     case "$version" in
         6|8|9|10|11|12|16.04|18.04|20.04|20.10|21.04|21.10|22.04)
@@ -106,7 +106,7 @@ update_system() {
     echo -e "\033[1;97m EJECUTANDO COMANDO \e[93m >>> \e[36m $package"
     barra_installc "sudo apt $package -y"
   done
-  wget -O /usr/bin/ELEMENT https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Instalador/ELEMENT &>/dev/null
+  wget -O /usr/bin/ELEMENT https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Instalador/ELEMENT &>/dev/null
   chmod +x /usr/bin/ELEMENT
 }
 
@@ -151,7 +151,7 @@ install_inicial() {
 
   #CONFIGURAR SSH-ROOT PRINCIPAL AMAZON, GOOGLE
   pass_root() {
-    local ssh_config_url="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/sshd_config"
+    local ssh_config_url="https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Ejecutables/sshd_config"
     local ssh_config_path="/etc/ssh/sshd_config"
 
     # Descargar el archivo de configuración SSH
@@ -173,7 +173,7 @@ install_inicial() {
 }
   
   #-- VERIFICAR VERSIÓN
-  local version_url="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version"
+  local version_url="https://raw.githubusercontent.com/yosoyhendrix/ElementManager/master/Version"
   local version_file="/etc/ElementManager/temp/version_instalacion"
   wget -qO "$version_file" "$version_url"
   local version2=$(cat "$version_file")
