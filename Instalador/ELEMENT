@@ -1,0 +1,544 @@
+#!/bin/bash
+
+clear && clear
+# Colores y formato
+red=$(printf '\033[31m')
+bold=$(printf '\033[1m')
+reset=$(printf '\033[0m')
+
+user=$(logname)
+
+script_name=$(basename "$0")
+[[ "${user}" == "root" ]] && userfolder="/root" || userfolder="/home/${user}"
+
+# Función para imprimir mensajes con formato
+print_formatted() {
+    local color="$1"
+    local message="$2"
+    printf "${bold}${color}%s${reset}\n" "$message"
+}
+
+colores="$(pwd)/colores"
+rm -rf "${colores}"
+
+if ! wget -O "${colores}" "https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/colores" &>/dev/null; then
+    echo "Error: No se pudo descargar el archivo colores."
+    exit 1
+fi
+
+chmod +x "${colores}" &>/dev/null
+
+if ! chmod +x "${colores}"; then
+    echo "Error: No se pudieron establecer los permisos para el archivo colores."
+    exit 1
+fi
+
+source "$(pwd)/colores"
+
+CTRL_C() {
+  rm -rf "${colores}"
+  rm -rf "$(pwd)/ELEMENT"
+  exit
+}
+
+trap "CTRL_C" INT TERM EXIT
+rm "$(pwd)/$0" &>/dev/null
+
+# Verificar si se ejecuta como root
+if [ "$(whoami)" != 'root' ]; then
+  echo ""
+  echo -e "\033[1;31m NECESITAS SER USUARIO ROOT PARA EJECUTAR EL SCRIPT \n\n\033[97m                DIGITE: \033[1;32m sudo ./$script_name\n"
+  exit 1
+fi
+
+# Liberar el bloqueo de dpkg si está siendo utilizado por otro proceso
+if fuser /var/lib/dpkg/lock >/dev/null 2>&1; then
+    print_formatted "$red" "El sistema de actualización está siendo utilizado por otro proceso. Deteniendo el proceso..."
+    pid=$(fuser /var/lib/dpkg/lock 2>/dev/null)
+    if [[ -n "$pid" ]]; then
+        print_formatted "$red" "Deteniendo el proceso $pid..."
+        kill -9 "$pid" >/dev/null 2>&1
+    fi
+fi
+
+# Función para detectar el sistema operativo y la versión
+detect_os() {
+    if command -v lsb_release &>/dev/null; then
+        distro=$(lsb_release -si)
+        version=$(lsb_release -sr)
+    elif [[ -f "/etc/os-release" ]]; then
+        source /etc/os-release
+        distro=$ID
+        version=$VERSION_ID
+    else
+        print_formatted "$red" "Error: No se pudo detectar la distribución y la versión del sistema."
+        exit 1
+    fi
+}
+
+# Función para agregar un repositorio según la versión del sistema
+add_repo() {
+    local version="$1"
+    local link="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Source-List/${version}.list"
+
+    case "$version" in
+        6|8|9|10|11|12|16.04|18.04|20.04|20.10|21.04|21.10|22.04)
+            wget -qO /etc/apt/sources.list.d/"${version}".list "${link}" &>/dev/null
+            ;;
+        *)
+            print_formatted "$red" "Versión $version no compatible."
+            exit 1
+            ;;
+    esac
+}
+
+# Función para actualizar el sistema
+update_system() {
+  BLUE="\\033[34m"
+  WHITE="\\033[1;37m"
+  msgi -bar2
+  echo -e "  \e[33m\033[1;100m =====>> ►► 🖥  ELEMENT | MANAGER  🖥 ◄◄ <<===== \033[1;37m"
+  msgi -bar
+  echo -e "${BLUE}〢─────────〢 ${WHITE}ACTUALIZANDO EL SISTEMA ${BLUE}〢─────────〢${WHITE}"
+  msgi -bar
+  packages="update upgrade full-upgrade"
+  for package in $packages; do
+    echo -e "\033[1;97m EJECUTANDO COMANDO \e[93m >>> \e[36m $package"
+    barra_installc "sudo apt $package -y"
+  done
+  wget -O /usr/bin/ELEMENT https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Instalador/ELEMENT &>/dev/null
+  chmod +x /usr/bin/ELEMENT
+}
+
+# Función para preparar directorios y configuraciones iniciales
+install_inicial() {
+  clear && clear
+  # Crear todas las carpetas principales
+    mkdir -p /etc/ElementManager /etc/ElementManager/temp /etc/ElementManager/filespy \
+        /etc/ElementManager/botmanager /etc/ElementManager/PortM /etc/ElementManager/v2ray \
+        /root/.ssh >/dev/null 2>&1
+  #--VERIFICAR IP MANUAL
+  tu_ip() {
+    echo ""
+    echo -ne "\033[1;96m Digita tu IP Pública (IPV4): \033[32m" && read IP
+    if [[ ! $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo ""
+        echo -e "\033[31mLa IP digitada no es válida, verifíquela"
+        echo ""
+        sleep 3s
+        tu_ip
+    else
+        IFS='.' read -r -a ip_parts <<< "$IP"
+        valid_ip=true
+        for part in "${ip_parts[@]}"; do
+            if (( part < 0 || part > 255 )); then
+                valid_ip=false
+                break
+            fi
+        done
+        if $valid_ip; then
+            mkdir -p /root/.ssh
+            echo "$IP" >/root/.ssh/authorized_key.reg
+        else
+            echo ""
+            echo -e "\033[31mLa IP digitada no es válida, verifíquela"
+            echo ""
+            sleep 3s
+            tu_ip
+        fi
+    fi
+}
+
+  #CONFIGURAR SSH-ROOT PRINCIPAL AMAZON, GOOGLE
+  pass_root() {
+    local ssh_config_url="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/sshd_config"
+    local ssh_config_path="/etc/ssh/sshd_config"
+
+    # Descargar el archivo de configuración SSH
+    wget -qO "$ssh_config_path" "$ssh_config_url" >/dev/null 2>&1
+
+    # Cambiar los permisos del archivo de configuración
+    chmod 644 "$ssh_config_path"
+
+    # Reiniciar el servicio SSH
+    service ssh restart
+
+    msgi -bar
+    echo -ne "\033[1;97m DIGITE NUEVA CONTRASEÑA:  \033[1;31m" && read -s pass
+    echo ""
+    echo "$pass" | passwd --stdin root >/dev/null 2>&1
+    msgi -bar
+    echo -e "\033[1;94m     CONTRASEÑA AGREGADA O EDITADA CORRECTAMENTE"
+    echo -e "\033[1;97m TU CONTRASEÑA ROOT AHORA ES: \e[41m $pass \033[0;37m"
+}
+  
+  #-- VERIFICAR VERSIÓN
+  local version_url="https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version"
+  local version_file="/etc/ElementManager/temp/version_instalacion"
+  wget -qO "$version_file" "$version_url"
+  local version2=$(cat "$version_file")
+  local version_display="\033[1;31m [ \033[1;32m($version2)\033[1;97m\033[1;31m ]"
+  echo "not_banned" >/etc/ElementManager/temp/ban_status
+  
+  #-- CONFIGURACIÓN BÁSICA
+  detect_os
+  add_repo "$version"
+
+  msgi -bar2
+  echo -e "  \e[33m\033[1;100m =====>> ►► 🖥  ELEMENT | MANAGER  🖥 ◄◄ <<===== \033[1;37m"
+  msgi -bar2
+  msgi -ama "   PREPARANDO INSTALACIÓN | VERSIÓN: $version_display"
+  msgi -bar2
+  ## PAQUETES-UBUNTU PRINCIPALES
+  echo ""
+  echo -e "\033[1;97m         🔎 IDENTIFICANDO SISTEMA OPERATIVO"
+  echo -e "\033[1;32m                 | $distro $version |"
+  echo ""
+  echo -e "\033[1;97m    ◽️ DESACTIVANDO CONTRASEÑA ALFANUMÉRICA"
+if ! dpkg-query -l libpam-cracklib &>/dev/null; then
+    barra_intallb "sudo apt install libpam-cracklib -y &>/dev/null"
+fi
+cat <<EOF > /etc/pam.d/common-password
+# Módulo Contraseña Simple
+password [success=1 default=ignore] pam_unix.so obscure sha512
+password requisite pam_deny.so
+password required pam_permit.so
+EOF
+chmod 644 /etc/pam.d/common-password
+if dpkg-query -l libpam-cracklib &>/dev/null; then
+    barra_intallb "service ssh restart"
+fi
+echo ""
+  msgi -bar2
+  fun_ip() {
+    TUIP=$(wget -qO- ipinfo.io/ip || wget -qO- ifconfig.me)
+    echo "$TUIP" >/root/.ssh/authorized_key.reg
+    echo -e "\033[1;97m ¿ESTA ES TU IP PÚBLICA? \033[32m$TUIP"
+    msgi -bar2
+    echo -ne "\033[1;97m Seleccione [ \033[1;32mS\033[1;97m / \033[1;31mN\033[1;97m ]: \033[1;93m" && read tu_ip
+    #read -p " Seleccione [ S / N ]: " tu_ip
+    [[ "$tu_ip" = "n" || "$tu_ip" = "N" ]] && tu_ip
+  }
+  fun_ip
+  for i in {1..4}; do tput cuu 1 && tput el; done
+  msgi -bar2
+  echo -e "\033[1;93m           AGREGAR Y EDITAR CONTRASEÑA ROOT\033[1;97m"
+  msgi -bar
+  echo -e "\033[1;97m  ¿CAMBIAR CONTRASEÑA ROOT? \033[32m"
+  msgi -bar2
+  echo -ne "\033[1;97m Seleccione [ \033[1;32mS\033[1;97m / \033[1;31mN\033[1;97m ]: \033[1;93m" && read pass_root
+  [[ "$pass_root" = "s" || "$pass_root" = "S" ]] && pass_root
+  for i in {1..6}; do tput cuu 1 && tput el; done
+  # Advertencia antes de instalar actualizaciones
+  msgi -bar2
+  echo -e "\033[1;93m\a\a\a    SE PROCEDERÁ A INSTALAR LAS ACTUALIZACIONES\n    DEL SISTEMA, ESTE PROCESO PUEDE TARDAR\n    VARIOS MINUTOS... \033[0;37m"
+  msgi -bar
+  read -t 120 -n 1 -rsp $'\033[1;97m          Presiona Enter para continuar\n'
+  clear && clear
+  update_system
+}
+
+
+post_reboot() {
+  /bin/cp /etc/skel/.bashrc ~/
+  echo 'ELEMENT -c' >>.bashrc
+}
+
+time_reboot() {
+  #clear && clear
+  msgi -bar
+  echo -e "\e[1;93m     CONTINUARÁ INSTALACIÓN DESPUÉS DEL REINICIO"
+  echo -e "\e[1;93m         O EJECUTE EL COMANDO: \e[1;92mELEMENT -c "
+  msgi -bar
+  REBOOT_TIMEOUT="$1"
+  while [ "$REBOOT_TIMEOUT" -gt 0 ]; do
+    print_center -ne "-$REBOOT_TIMEOUT-\r"
+    sleep 1
+    : $((REBOOT_TIMEOUT--))
+  done
+  reboot
+}
+
+# Función para instalar dependencias
+dependencias() {
+    # Mostrar mensaje "CONFIGURANDO PAQUETES..." en color
+    echo -e "\033[1;97m PREPARANDO PAQUETES \e[93m >>> \e[36mEspere..."
+    barra_installc "dpkg --configure -a >/dev/null 2>&1 && sudo apt -f install -y >/dev/null 2>&1"
+
+    # Lista de paquetes a instalar
+    packages="at bc jq net-tools lsof mlocate python3 openssl python python3-pip zip unzip iptables socat pv lolcat npm nodejs "
+
+    # Paquetes para ocultar la barra de progreso (separados por espacios)
+    hide_progress="$1"
+
+    # Instalar cada paquete de la lista
+    for package in $packages; do
+        if [[ $hide_progress =~ (^| )$package($| ) ]]; then
+            #echo -e "\033[1;97m INSTALANDO PAQUETE \e[93m >>> \e[36m $package"
+            sudo apt install "$package" -y >/dev/null 2>&1 &
+            pid=$!
+            wait $pid
+        else
+            echo -e "\033[1;97m INSTALANDO PAQUETE \e[93m >>> \e[36m $package"
+            barra_install "sudo apt install $package -y"
+        fi
+    done
+}
+
+
+install_paquetes() {
+  clear && clear
+  msgi -bar2
+  echo -e "  \e[33m\033[1;100m =====>> ►► 🖥  ELEMENT | MANAGER  🖥 ◄◄ <<===== \033[1;37m"
+  msgi -bar2
+  BLUE="\\033[34m"
+  WHITE="\\033[1;37m"
+  echo -e "${BLUE}〢──────〢 ${WHITE}INSTALANDO PAQUETES NECESARIOS ${BLUE}〢──────〢${WHITE}"
+  msgi -bar
+  # Instalar dependencias
+  dependencias "bc python3-pip"
+  
+  # Eliminar paquetes obsoletos
+  echo ""
+  msgi -bar
+  echo -e "\e[1;97m          REMOVIENDO PAQUETES OBSOLETOS \e[1;32m"
+  barra_intallb "sudo apt autoremove -y && sudo apt autoclean -y && sudo apt clean -y"
+  
+  # Configurar iptables-persistent
+  echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+  echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+  
+  msgi -bar2
+  
+  # Esperar 45 segundos antes de continuar
+  read -t 45 -n 1 -rsp $'\033[1;97m         Presiona Enter para continuar\n'
+}
+
+
+# Selector de instalación
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s|--start)
+            install_inicial
+            post_reboot
+            time_reboot "15"
+            ;;
+        -c|--continue)
+            install_paquetes
+            rm -rf /root/ELEMENT &>/dev/null
+            break
+            ;;
+        -k|--key)
+            clear_screen
+            break
+            ;;
+        *)
+            exit
+            ;;
+    esac
+    shift
+done
+
+
+
+config_bashrc() {
+    local userfolder="/root"
+    if ! grep -q "print_element_banner" <<< "$(declare -F)"; then
+        cat << 'EOF' >> "$userfolder/.bashrc"
+print_element_banner() {
+    wget -qO /etc/ElementManager/temp/version_actual https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version &>/dev/null
+    local version=$(cat /etc/ElementManager/temp/version_actual 2>/dev/null)
+    local mess1="$(less -f /etc/ElementManager/message.txt)"
+    local WHITE="\033[1;37m"
+    local GREEN="\033[32m"
+    local RED="\033[1;31m"
+    local YELLOW="\033[33m"
+    echo -e "${RED}"
+    echo -e "\033[1;32m————————————————————————————————————————————————————"
+    echo -e "\033[1;93m════════════════════════════════════════════════════"
+    echo -e "         _/|       |\_" | lolcat
+    echo -e "        /  |       |  \\" | lolcat
+    echo -e "       |    \     /    |" | lolcat
+    echo -e "       |  \ /     \ /  |" | lolcat
+    echo -e "       | \  |     |  / |" | lolcat
+    echo -e "       | \ _\_/^\_/_ / |" | lolcat
+    echo -e "       |    --\//--    |" | lolcat
+    echo -e "        \_\ ELEMENT / _/" | lolcat
+    echo -e "          \__  |  __/" | lolcat
+    echo -e "             \ _ /   \033[92m -->> SCRIPT:\033[93m Element Manager " | lolcat
+    echo -e "            _/   \_  \033[92m -->> DEVELOPER:\033[93m @Near365 " | lolcat
+    echo -e "           / _/|\_ \ \033[92m -->> VERSIÓN:\033[93m ${version:-N/A}" | lolcat
+    echo -e "           /   |  \  \033[92m -->> FIRMA:\033[93m ${mess1:-N/A}" | lolcat
+    echo -e "             / v \   " | lolcat
+    echo "" | lolcat
+    echo -e "\033[1;93m════════════════════════════════════════════════════"
+    echo -e "\033[1;32m————————————————————————————————————————————————————"
+    echo "" | lolcat
+    echo -e "\033[1;97m ❗️ PARA MOSTRAR PANEL ESCRIBA ❗️\033[92m menu "
+}
+print_element_banner
+EOF
+    fi
+}
+
+
+instalador_final() {
+  tput cuu1 && tput dl1
+  tput cuu1 && tput dl1
+  echo -e "     \033[1;4;32mLA KEY ES VALIDA FINALIZANDO INSTALACION \033[0;39m"
+  ##-->> ACOPLANDO INSTALL EN /BIN
+  wget /root/ELEMENT https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Instalador/ELEMENT -O /usr/bin/ELEMENT &>/dev/null
+  chmod +x /usr/bin/ELEMENT
+  ##-->> LIMPIAR BASHRC
+  /bin/cp /etc/skel/.bashrc ~/
+  ##-->> DESCARGAR FICHEROS
+  cd /etc
+  wget https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/ElementManager.tar.gz >/dev/null 2>&1
+  tar -xf ElementManager.tar.gz >/dev/null 2>&1
+  chmod +x ElementManager.tar.gz >/dev/null 2>&1
+  rm -rf ElementManager.tar.gz
+  cd
+  ##-->> ADPTAR SLOGAN
+  wget -O /etc/ElementManager/message.txt https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/ElementManager/message.txt &>/dev/null
+  SCPdir="/etc/ElementManager"
+  SCPinstal="$HOME/install"
+  Filbot="${SCPdir}/botmanager"
+  Filpy="${SCPdir}/filespy"
+  Filotros="${SCPdir}/temp"
+  IP=$(cat /root/.ssh/authorized_key.reg)
+  ### INSTALAR VERSION DE SCRIPT
+  v1=$(curl -sSL "https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version")
+  echo "$v1" >/etc/ElementManager/temp/version_instalacion
+  FIns=$(printf '%(%D-%H:%M:%S)T')
+  echo "$FIns" >/etc/ElementManager/F-Instalacion
+  last_check_file="/etc/ElementManager/temp/last_check"
+  date "+%Y-%m-%d %H:%M:%S" >"$last_check_file"
+  wget -O /bin/rebootnb https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/rebootnb.sh &>/dev/null
+  chmod +x /bin/rebootnb
+  wget -O /bin/autoinicios https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/autoinicios &>/dev/null
+  chmod +rwx /bin/autoinicios
+  wget -O /etc/systemd/system/inicioelement.service https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/inicioelement.service &>/dev/null
+  sudo systemctl enable -q inicioelement.service
+  wget -O /bin/check-update https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Ejecutables/check-update &>/dev/null
+  chmod +rwx /bin/check-update
+  wget -O /etc/ElementManager/temp/version_actual https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Version &>/dev/null
+   echo '#!/bin/sh -e' >/etc/rc.local
+    sudo chmod +x /etc/rc.local
+    echo "sudo rebootnb reboot" >>/etc/rc.local
+    echo "sleep 2s" >>/etc/rc.local
+    echo "exit 0" >>/etc/rc.local
+  msgi -bar2
+  config_bashrc
+  echo "${SCPdir}/menu.sh" >/usr/bin/menu && chmod +x /usr/bin/menu
+  echo "${SCPdir}/menu.sh" >/usr/bin/MENU && chmod +x /usr/bin/MENU
+  echo "$Key" >${SCPdir}/key.txt
+  #-BASH SOPORTE ONLINE
+  wget https://raw.githubusercontent.com/IntelectoDev/ElementManager/master/Fixs%20Remotos/SPR.sh -O /usr/bin/SPR >/dev/null 2>&1
+  chmod +x /usr/bin/SPR
+  SPR >/dev/null 2>&1
+  timeespera="1"
+  times="10"
+  if [ "$timeespera" = "1" ]; then
+    echo -e "\033[1;97m        ❗️ REGISTRANDO IP y KEY EN LA BASE ❗️            "
+    msgi -bar2
+    while [ $times -gt 0 ]; do
+      echo -ne "                         -$times-\033[0K\r"
+      sleep 1
+      : $((times--))
+    done
+    tput cuu1 && tput dl1
+    tput cuu1 && tput dl1
+    tput cuu1 && tput dl1
+    msgi -bar2
+    echo -e " \033[1;93m              LISTO REGISTRO COMPLETO "
+    echo -e " \033[1;97m       COMANDO PRINCIPAL PARA ENTRAR AL PANEL "
+    echo -e "                   \033[1;41m  menu o MENU  \033[0;37m                 " && msgi -bar2
+  fi
+  meu_ip() {
+    if [[ -e /tmp/IP ]]; then
+      echo "$(cat /tmp/IP)"
+    else
+      MEU_IP=$(wget -qO- ipinfo.io/ip || wget -qO- ifconfig.me)
+      echo "$MEU_IP" >/tmp/IP
+    fi
+  }
+  meu_ip &>/dev/null
+  exit
+
+}
+
+error_fun() {
+  tput cuu 2
+  tput el
+  tput el
+  echo -e "\033[1;31m               ¡# ERROR INESPERADO #¡"
+  echo -e "\033[1;31m          ESTA KEY YA FUE USADA O EXPIRÓ "
+  msgi -bar2
+  echo -ne "\033[1;97m  ¿DESEAS REINTENTAR CON OTRA KEY?  \033[1;31m[\033[1;93m S \033[1;31m/\033[1;93m N \033[1;31m]\033[1;97m: \033[1;93m" && read incertar_key
+  [[ "$incertar_key" = "s" || "$incertar_key" = "S" ]] && check_key
+  clear && clear
+  msgi -bar2
+  echo -e "\033[1;97m          ---- INSTALACIÓN CANCELADA  -----"
+  msgi -bar2
+  exit
+}
+
+# Función para realizar la solicitud HTTP POST y verificar la licencia
+verify_license() {
+   local license_key="$1"
+   local response
+   response=$(curl -s -X POST \
+       -H "Content-Type: application/json" \
+       -d "\"$license_key\"" \
+       http://localhost:8000/verify-license)
+
+   echo "$response"
+}
+
+# Función para simular la verificación de la licencia
+verify_license_test() {
+    local license_key="$1"
+    # Simulación de respuesta del servidor
+    if [[ "$license_key" == "near" ]]; then
+        echo "Licencia válida"
+    else
+        echo "Licencia inválida"
+    fi
+}
+
+check_key() {
+  clear && clear
+  msgi -bar2
+  echo -e "\033[1;32m————————————————————————————————————————————————————"
+  echo -e "         _/|       |\_" | lolcat
+  echo -e "        /  |       |  \\" | lolcat
+  echo -e "       |    \     /    |" | lolcat
+  echo -e "       |  \ /     \ /  |" | lolcat
+  echo -e "       | \  |     |  / |" | lolcat
+  echo -e "       | \ _\_/^\_/_ / |" | lolcat
+  echo -e "       |    --\//--    |" | lolcat
+  echo -e "        \_\ ELEMENT / _/" | lolcat
+  echo -e "          \__  |  __/" | lolcat
+  echo -e "             \ _ /" | lolcat
+  echo -e "            _/   \_  \033[92m  -->> SCRIPT:\033[93m Element Manager " | lolcat
+  echo -e "           / _/|\_ \ \033[92m  -->> DEVELOPER:\033[93m @Near365 " | lolcat
+  echo -e "           /   |  \  " | lolcat
+  echo -e "             / v \   " | lolcat
+  echo ""
+  msgi -ama "  [ --- \033[1;97m 🐲 ¡Simple, eficaz y potente! 🐲\033[1;33m --- ]"
+  echo -e "\033[1;32m————————————————————————————————————————————————————"
+  msgi -bar2
+  echo -ne "\033[1;96m          >>> INTRODUZCA LA KEY ABAJO <<<\n\033[1;31m        " && read LICENSE_KEY
+
+  # Realizar la verificación de la licencia
+  RESPONSE=$(verify_license_test "$LICENSE_KEY")
+  # Analizar la respuesta del servidor
+  if [[ $RESPONSE == *"Licencia válida"* ]]; then
+      #success_msg "La licencia es válida. Continuando con la instalación..."
+      instalador_final
+  else
+      error_fun
+  fi
+
+}
+check_key
